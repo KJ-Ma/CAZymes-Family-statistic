@@ -1,0 +1,129 @@
+import xlrd
+import openpyxl
+import functools
+import sys
+
+class microbe:
+    # __name = ""
+    # __dnas = []
+    # __dnas_count = {}
+    # __result = {}
+    def __init__(self, _name):
+        self.__name = _name
+        self.__dnas = []
+        self.__dnas_count = {}
+        self.__result = {}
+    def name_ret(self):
+        return self.__name
+    def dna(self):
+        return self.__dnas
+    def dna_count(self, _dna):
+        if _dna not in self.__dnas:
+            self.__dnas.append(_dna)
+            self.__dnas_count[_dna] = 1
+        else:
+            self.__dnas_count[_dna] += 1
+    def result_all(self, l):
+        for i in l:
+            if i in self.__dnas:
+                self.__result[i] = self.__dnas_count[i]
+            else:
+                self.__result[i] = '-'
+        return self.__result
+
+def comp(x,y):
+    x0 = "".join(list(filter(str.isalpha, x)))
+    x1 = "".join(list(filter(str.isdigit, x)))
+    y0 = "".join(list(filter(str.isalpha, y)))
+    y1 = "".join(list(filter(str.isdigit, y)))
+
+    if x0 == y0:
+        if int(x1) > int(y1):
+            return 1
+        else:
+            return -1;
+    elif x0 > y0:
+        return 1
+    else:
+        return -1
+
+    return 0
+
+if __name__ == "__main__":
+    arg1 = ""
+    if sys.argv.__len__() == 1:
+        print("usage: python3 ./" + sys.argv[0] + " " + "<filename>")
+
+    else:
+        arg1 = sys.argv[1]
+        book = xlrd.open_workbook(arg1)
+        sheet0 = book.sheets()[0]
+
+        mc = {}
+
+        for i in range(0, sheet0.nrows):
+
+            table_list = sheet0.row_values(rowx=i, start_colx=0, end_colx=None)
+            name = table_list[0].rsplit('_',1)[0]
+            if name == '':
+                continue
+            # print(name)
+            # print(i)
+            if name not in mc:
+                mc[name] = microbe(name)
+
+            list_ = [x for x in table_list[1:4] if x != '-']
+            target_list = []
+            for i in list_:
+                if ("+" in i):
+                    target_list += i.split("+")
+                else:
+                    target_list.append(i)
+            target_list_set = set(target_list)
+            # print(target_list_set)
+            # print(target_list)
+            for i in target_list_set:
+                if target_list.count(i) >= 2:
+                    mc[name].dna_count(i)
+                    # print(i,mc[name].name_ret())
+
+            # print("\n")
+        # print(len(mc))
+        ds = []
+        for i in mc:
+            ds += mc[i].dna()
+        l = list(set(ds))
+        l.sort(key=functools.cmp_to_key(comp))
+        # print(l)
+
+        for i in mc:
+            r = mc[i].result_all(l)
+            for j in range(0,len(l)):
+                pass
+
+
+
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        # worksheet = workbook.create_sheet('result',cell_overwrite_ok=True)
+        worksheet.cell(1,1, "酶编号")
+        for i in range(0,len(l)):
+            worksheet.cell(i+2,1, l[i])
+
+        j = 1
+        for i in mc:
+            print(i)
+            print(j)
+            name = mc[i].name_ret()
+            worksheet.cell(1,j + 1, name)
+            k =1
+            re = mc[i].result_all(l)
+            # print(re)
+            for r in re:
+                worksheet.cell(k+1,j+1, re[r])
+                k+=1
+            j+=1
+
+        workbook.save("./" + "result_" + arg1.split('/')[-1])
+        print("save to " + "./" + "result_" + arg1.split('/')[-1])
+        pass
